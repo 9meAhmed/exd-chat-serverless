@@ -4,9 +4,7 @@ let conn = null;
 
 export async function connectDB() {
   if (conn) return conn;
-  conn = await mongoose.connect(
-    "mongodb+srv://nomi1408:nomi03114206575@cluster0.cz0alea.mongodb.net/"
-  );
+  conn = await mongoose.connect(process.env.MONGO_URI);
   console.log("✅ MongoDB connected");
   return conn;
 }

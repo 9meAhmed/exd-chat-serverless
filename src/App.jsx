@@ -1,167 +1,111 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { ChatMessage } from "./components/ChatMessage";
 import { ContactSidebar } from "./components/ContactSidebar";
-
-const sampleContacts = [
-  {
-    id: 1,
-    name: "John Smith",
-    lastMessage: "Pretty good! Just working on some projects.",
-    timestamp: "2m ago",
-    unread: 2,
-    online: true,
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    lastMessage: "See you tomorrow!",
-    timestamp: "1h ago",
-    online: true,
-  },
-  {
-    id: 3,
-    name: "Mike Wilson",
-    lastMessage: "Thanks for your help",
-    timestamp: "3h ago",
-    unread: 1,
-    online: false,
-  },
-  {
-    id: 4,
-    name: "Emily Davis",
-    lastMessage: "That sounds great!",
-    timestamp: "1d ago",
-    online: false,
-  },
-  {
-    id: 5,
-    name: "David Brown",
-    lastMessage: "Let me know when you're free",
-    timestamp: "2d ago",
-    online: true,
-  },
-];
-
-const contactMessages = {
-  1: [
-    {
-      id: 1,
-      text: "Hey! How are you?",
-      sender: "other",
-      timestamp: new Date(Date.now() - 300000),
-    },
-    {
-      id: 2,
-      text: "I'm doing great, thanks! How about you?",
-      sender: "user",
-      timestamp: new Date(Date.now() - 240000),
-    },
-    {
-      id: 3,
-      text: "Pretty good! Just working on some projects.",
-      sender: "other",
-      timestamp: new Date(Date.now() - 180000),
-    },
-  ],
-  2: [
-    {
-      id: 1,
-      text: "Don't forget about the meeting tomorrow",
-      sender: "other",
-      timestamp: new Date(Date.now() - 3600000),
-    },
-    {
-      id: 2,
-      text: "Thanks for reminding me!",
-      sender: "user",
-      timestamp: new Date(Date.now() - 3500000),
-    },
-    {
-      id: 3,
-      text: "See you tomorrow!",
-      sender: "other",
-      timestamp: new Date(Date.now() - 3400000),
-    },
-  ],
-  3: [
-    {
-      id: 1,
-      text: "Can you help me with the project?",
-      sender: "other",
-      timestamp: new Date(Date.now() - 10800000),
-    },
-    {
-      id: 2,
-      text: "Sure, what do you need?",
-      sender: "user",
-      timestamp: new Date(Date.now() - 10700000),
-    },
-    {
-      id: 3,
-      text: "Thanks for your help",
-      sender: "other",
-      timestamp: new Date(Date.now() - 10600000),
-    },
-  ],
-  4: [
-    {
-      id: 1,
-      text: "Want to grab coffee sometime?",
-      sender: "other",
-      timestamp: new Date(Date.now() - 86400000),
-    },
-    {
-      id: 2,
-      text: "That sounds great!",
-      sender: "other",
-      timestamp: new Date(Date.now() - 86300000),
-    },
-  ],
-  5: [
-    {
-      id: 1,
-      text: "Let me know when you're free",
-      sender: "other",
-      timestamp: new Date(Date.now() - 172800000),
-    },
-  ],
-};
+import useAxios from "./hooks/useAxios";
+import { pusherClient } from "./pusher";
 
 export default function App() {
-  const [activeContactId, setActiveContactId] = useState(1);
-  const [messages, setMessages] = useState(contactMessages[1]);
+  const contactsApi = useAxios();
+  const messagesApi = useAxios();
+  const sendMsgApi = useAxios();
+
+  const senderName = "Danish Ikram";
+
+  const [sender, setSender] = useState(null);
+  const [activeContact, setActiveContact] = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
 
-  const handleSelectContact = (contactId) => {
-    setActiveContactId(contactId);
-    setMessages(contactMessages[contactId] || []);
+  useEffect(() => {
+    const channel = pusherClient.subscribe("adored-sage-858");
+
+    const handler = (data) => {
+      console.log("New message event:", data);
+
+      setMessages((prev) => [...prev, data]);
+    };
+
+    channel.bind("new-message", handler);
+
+    return () => {
+      channel.unbind("new-message", handler);
+      pusherClient.unsubscribe("chat-channel");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (contactsApi.response) {
+      setContacts(filterConstacts(contactsApi.response));
+      setActiveContact(contactsApi.response[0]);
+      setSender(findSender(contactsApi.response));
+    }
+  }, [contactsApi.response]);
+
+  useEffect(() => {
+    if (messagesApi.response) {
+      setMessages(messagesApi.response);
+    }
+  }, [messagesApi.response]);
+
+  useEffect(() => {
+    contactsApi.fetchData({ url: "api/chats", method: "GET" });
+  }, []);
+
+  useEffect(() => {
+    if (activeContact !== null) {
+      messagesApi.fetchData({
+        url: "api/messages",
+        method: "POST",
+        data: { chat: activeContact, sender },
+      });
+    }
+  }, [activeContact]);
+
+  const handleSelectContact = (contact) => {
+    setActiveContact(contact);
   };
 
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (inputMessage.trim() === "") return;
 
-    const newMessage = {
-      id: messages.length + 1,
-      text: inputMessage,
-      sender: "user",
-      timestamp: new Date(),
+    const data = {
+      sender,
+      contact: activeContact,
+      message: inputMessage,
     };
 
-    setMessages([...messages, newMessage]);
+    sendMsgApi.fetchData({ url: "api/send", method: "POST", data });
+
+    // const newMessage = {
+    //   id: messages.length + 1,
+    //   text: inputMessage,
+    //   sender: "user",
+    //   timestamp: new Date(),
+    // };
+
+    // setMessages([...messages, newMessage]);
     setInputMessage("");
   };
 
-  const activeContact = sampleContacts.find((c) => c.id === activeContactId);
+  const findSender = (contacts) => {
+    return contacts.find((contact) => contact.name === senderName);
+  };
+
+  const filterConstacts = (contacts) => {
+    return contacts;
+    // return contacts.filter((contact) => contact.name !== senderName);
+  };
 
   return (
     <Container fluid className="vh-100 d-flex flex-column p-0">
       {/* Header */}
       <Row className="bg-primary text-white m-0">
         <Col className="py-3 px-4">
-          <h4 className="mb-0">Chat Application</h4>
+          <h4 className="mb-0">Chat Application ({senderName})</h4>
         </Col>
       </Row>
 
@@ -170,8 +114,8 @@ export default function App() {
         {/* Sidebar */}
         <Col xs={12} md={4} lg={3} className="p-0 h-100 d-none d-md-block">
           <ContactSidebar
-            contacts={sampleContacts}
-            activeContactId={activeContactId}
+            contacts={contacts}
+            activeContact={activeContact}
             onSelectContact={handleSelectContact}
           />
         </Col>

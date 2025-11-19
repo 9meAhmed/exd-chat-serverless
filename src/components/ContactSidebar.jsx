@@ -1,6 +1,7 @@
 import { ListGroup, Form, Badge } from "react-bootstrap";
+import moment from "moment";
 
-export function ContactSidebar({ contacts, activeContactId, onSelectContact }) {
+export function ContactSidebar({ contacts, activeContact, onSelectContact }) {
   return (
     <div className="h-100 d-flex flex-column border-end">
       {/* Search */}
@@ -17,10 +18,10 @@ export function ContactSidebar({ contacts, activeContactId, onSelectContact }) {
         <ListGroup variant="flush">
           {contacts.map((contact) => (
             <ListGroup.Item
-              key={contact.id}
+              key={contact._id}
               action
-              active={contact.id === activeContactId}
-              onClick={() => onSelectContact(contact.id)}
+              active={contact._id === activeContact._id}
+              onClick={() => onSelectContact(contact)}
               className="border-0 px-3 py-3"
             >
               <div className="d-flex align-items-start">
@@ -48,7 +49,9 @@ export function ContactSidebar({ contacts, activeContactId, onSelectContact }) {
                   <div className="d-flex justify-content-between align-items-start mb-1">
                     <h6 className="mb-0 text-truncate">{contact.name}</h6>
                     <small className="text-muted ms-2 flex-shrink-0">
-                      {contact.timestamp}
+                      {contact.timestamp
+                        ? moment(contact.timestamp).fromNow()
+                        : "--"}
                     </small>
                   </div>
                   <div className="d-flex justify-content-between align-items-center">

@@ -1,7 +1,7 @@
 import { Card } from "react-bootstrap";
 
 export function ChatMessage({ text, sender, timestamp }) {
-  const isUser = sender === "user";
+  const isUser = sender === "sender";
 
   const formatTime = (date) => {
     return date.toLocaleTimeString("en-US", {
@@ -25,7 +25,7 @@ export function ChatMessage({ text, sender, timestamp }) {
           <Card.Body className="py-2 px-3">
             <Card.Text className="mb-1">{text}</Card.Text>
             <small className={`${isUser ? "text-white-50" : "text-muted"}`}>
-              {formatTime(timestamp)}
+              {formatTime(new Date(timestamp))}
             </small>
           </Card.Body>
         </Card>
