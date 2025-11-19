@@ -3,14 +3,7 @@ import { connectDB, User, Chat, Message } from "./_db.js";
 export default async function handler(req, res) {
   await connectDB();
 
-
-
-
-
-
   let chats = await Chat.find().lean();
-
-
 
   chats = await Promise.all(
     (chats = chats.map(async (chat) => {
@@ -30,15 +23,3 @@ export default async function handler(req, res) {
 
   res.status(200).json(chats);
 }
-
-
-
-export default function handler(req, res) {
-  const messages = []
-
-  res.status(200).json(messages);
-}
-
-
-
-
