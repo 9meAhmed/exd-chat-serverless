@@ -22,12 +22,12 @@ export default async function handler(req, res) {
   try {
     await connectDB();
 
-    const users = await User.find({ name: sender.name }).lean();
+    const user = await User.findOne({ name: sender.name }).lean();
 
-    if (users) {
+    if (user) {
       const msg = await Message.create({
         chat: contact,
-        user: users[0],
+        user: user,
         message,
       });
 
@@ -36,6 +36,7 @@ export default async function handler(req, res) {
         text: msg.message,
         sender: "sender",
         timestamp: new Date(msg.createdAt - 300000),
+        chat: msg.chat,
       };
 
       await pusher.trigger("adored-sage-858", "new-message", msgData);
