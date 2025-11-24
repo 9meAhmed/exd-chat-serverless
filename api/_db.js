@@ -1,34 +1,26 @@
 import mongoose from "mongoose";
 
-let conn = null;
+const g = typeof global !== "undefined" ? global : globalThis;
 
-export async function connectDB() {
-  if (conn) return conn;
-  conn = await mongoose.connect(process.env.MONGO_URI);
-  console.log("✅ MongoDB connected");
-  return conn;
+let cached = g.mongoose;
+
+if (!cached) {
+  cached = g.mongoose = { conn: null, promise: null };
 }
 
-const UserSchema = new mongoose.Schema({
-  name: String,
-  createdAt: { type: Date, default: Date.now },
-});
+export default async function connectDB() {
+  if (cached.conn) return cached.conn;
 
-const ChatSchema = new mongoose.Schema({
-  name: String,
-  createdAt: { type: Date, default: Date.now },
-});
+  if (!cached.promise) {
+    cached.promise = mongoose
+      .connect(process.env.MONGODB_URI, {
+        bufferCommands: false,
+      })
+      .then((mongoose) => {
+        return mongoose;
+      });
+  }
 
-const MessageSchema = new mongoose.Schema({
-  message: String,
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  chat: { type: mongoose.Schema.Types.ObjectId, ref: "Chat", required: true },
-  createdAt: { type: Date, default: Date.now },
-});
-
-export const User = mongoose.models.User || mongoose.model("User", UserSchema);
-
-export const Chat = mongoose.models.Chat || mongoose.model("Chat", ChatSchema);
-
-export const Message =
-  mongoose.models.Message || mongoose.model("Message", MessageSchema);
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
