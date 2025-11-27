@@ -3,16 +3,22 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { ChatMessage } from "./components/ChatMessage";
 import { ContactSidebar } from "./components/ContactSidebar";
+import LoginForm from "./components/LoginForm";
 import useAxios from "./hooks/useAxios";
 import { pusherClient } from "./pusher";
 
 export default function App() {
+  const authUser = localStorage.getItem("user");
+  const token = localStorage.getItem("token");
+
   const contactsApi = useAxios();
   const messagesApi = useAxios();
   const sendMsgApi = useAxios();
 
   const [senderID, setSenderID] = useState(null);
-  const [sender, setSender] = useState(null);
+  const [sender, setSender] = useState(
+    authUser && authUser !== null ? JSON.parse(authUser) : null
+  );
   const [activeContact, setActiveContact] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -45,10 +51,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    contactsApi.fetchData({ url: "api/chats", method: "GET" });
+    if (sender && sender === null) return;
+    contactsApi.fetchData({ url: "api/chat/list", method: "GET" });
   }, [sender]);
 
   useEffect(() => {
+    console.log("Contacts API Response:", contactsApi.response);
     if (contactsApi.response) {
       setContacts(filterConstacts(contactsApi.response));
       setActiveContact(contactsApi.response[0]);
@@ -71,9 +79,9 @@ export default function App() {
     }
   }, [activeContact, sender]);
 
-  useEffect(() => {
-    setSender(findSender(contacts));
-  }, [senderID]);
+  // useEffect(() => {
+  //   setSender(findSender(contacts));
+  // }, [senderID]);
 
   const handleSelectContact = (contact) => {
     setActiveContact(contact);
@@ -116,6 +124,18 @@ export default function App() {
     setSenderID(e.target.value);
   };
 
+  const handleLoginResponse = (user) => {
+    setSender(user);
+  };
+
+  const getChatName = (chat) => {
+    console.log(chat.members);
+    const member = chat.members.find(
+      (member) => member.userId._id !== sender._id
+    );
+    return member.userId.name;
+  };
+
   return (
     <Container fluid className="vh-100 d-flex flex-column p-0">
       {/* Header */}
@@ -123,26 +143,9 @@ export default function App() {
         <Col className="py-3 px-4">
           <h4 className="mb-0">Chat Application ({sender?.name})</h4>
         </Col>
-        <Col lg={3}>
-          <Form.Select
-            aria-label="Select User"
-            className="mt-3"
-            onChange={(e) => setSenderContact(e)}
-            value={sender?._id}
-          >
-            <option key="0">Select User</option>
-            {contacts.map((contact) => {
-              return (
-                <option key={contact._id} value={contact._id}>
-                  {contact.name}
-                </option>
-              );
-            })}
-          </Form.Select>
-        </Col>
       </Row>
 
-      {senderID !== null ? (
+      {sender && sender !== null ? (
         <Row className="flex-grow-1 m-0 overflow-hidden">
           {/* Sidebar */}
           <Col xs={12} md={4} lg={3} className="p-0 h-100 d-none d-md-block">
@@ -156,33 +159,36 @@ export default function App() {
           {/* Chat Area */}
           <Col xs={12} md={8} lg={9} className="p-0 h-100 d-flex flex-column">
             {/* Chat Header */}
-            <div className="border-bottom p-3 bg-white">
-              <div className="d-flex align-items-center">
-                <div
-                  className="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3 position-relative"
-                  style={{ width: "40px", height: "40px" }}
-                >
-                  <span>{activeContact?.name.charAt(0)}</span>
-                  {activeContact?.online && (
-                    <span
-                      className="position-absolute bg-success rounded-circle border border-2 border-white"
-                      style={{
-                        width: "10px",
-                        height: "10px",
-                        bottom: "2px",
-                        right: "2px",
-                      }}
-                    />
-                  )}
-                </div>
-                <div>
-                  <h6 className="mb-0">{activeContact?.name}</h6>
-                  <small className="text-muted">
-                    {activeContact?.online ? "Online" : "Offline"}
-                  </small>
+
+            {activeContact && (
+              <div className="border-bottom p-3 bg-white">
+                <div className="d-flex align-items-center">
+                  <div
+                    className="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3 position-relative"
+                    style={{ width: "40px", height: "40px" }}
+                  >
+                    <span>{getChatName(activeContact).charAt(0)}</span>
+                    {activeContact?.online && (
+                      <span
+                        className="position-absolute bg-success rounded-circle border border-2 border-white"
+                        style={{
+                          width: "10px",
+                          height: "10px",
+                          bottom: "2px",
+                          right: "2px",
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <h6 className="mb-0">{activeContact?.name}</h6>
+                    <small className="text-muted">
+                      {activeContact?.online ? "Online" : "Offline"}
+                    </small>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Messages Area */}
             <div
@@ -217,7 +223,9 @@ export default function App() {
             </div>
           </Col>
         </Row>
-      ) : null}
+      ) : (
+        <LoginForm onLoginSuccess={handleLoginResponse} />
+      )}
     </Container>
   );
 }

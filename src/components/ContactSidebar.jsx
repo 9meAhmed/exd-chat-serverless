@@ -2,6 +2,18 @@ import { ListGroup, Form, Badge } from "react-bootstrap";
 import moment from "moment";
 
 export function ContactSidebar({ contacts, activeContact, onSelectContact }) {
+  console.log("Rendering ContactSidebar with contacts:", contacts);
+  const authUser = localStorage.getItem("user");
+  const currentUser = authUser ? JSON.parse(authUser) : null;
+
+  const getChatName = (chat) => {
+    console.log(chat);
+    const member = chat.members.find(
+      (member) => member.userId._id !== currentUser._id
+    );
+    return member.userId.name;
+  };
+
   return (
     <div className="h-100 d-flex flex-column border-end">
       {/* Search */}
@@ -30,7 +42,8 @@ export function ContactSidebar({ contacts, activeContact, onSelectContact }) {
                   className="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3 flex-shrink-0 position-relative"
                   style={{ width: "48px", height: "48px" }}
                 >
-                  <span>{contact.name.charAt(0)}</span>
+                  <span>{getChatName(contact).charAt(0)}</span>
+
                   {contact.online && (
                     <span
                       className="position-absolute bg-success rounded-circle border border-2 border-white"
@@ -47,7 +60,9 @@ export function ContactSidebar({ contacts, activeContact, onSelectContact }) {
                 {/* Contact Info */}
                 <div className="flex-grow-1 overflow-hidden">
                   <div className="d-flex justify-content-between align-items-start mb-1">
-                    <h6 className="mb-0 text-truncate">{contact.name}</h6>
+                    <h6 className="mb-0 text-truncate">
+                      {getChatName(contact)}
+                    </h6>
                     <small className="text-muted ms-2 flex-shrink-0">
                       {contact.timestamp
                         ? moment(contact.timestamp).fromNow()

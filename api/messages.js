@@ -1,4 +1,6 @@
-import { connectDB, User, Chat, Message } from "./_db.js";
+import connectDB from "./_db.js";
+import Message from "./models/Message.js";
+import User from "./models/User.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST")
