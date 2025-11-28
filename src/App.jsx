@@ -30,6 +30,13 @@ export default function App() {
     const handler = (data) => {
       console.log("New message event:", data, activeContact);
 
+      console.log(data.sender, sender);
+
+      data = {
+        ...data,
+        sender: data.sender._id !== sender._id ? "other" : "sender",
+      };
+
       if (data.chat === activeContact._id) {
         setMessages((prev) => [...prev, data]);
       } else {

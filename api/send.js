@@ -36,7 +36,7 @@ export default async function handler(req, res) {
       const msgData = {
         id: msg._id,
         text: message,
-        sender: "sender",
+        sender,
         timestamp: new Date(msg.createdAt - 300000),
         chat: msg.chatId,
       };
