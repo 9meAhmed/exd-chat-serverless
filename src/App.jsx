@@ -28,7 +28,7 @@ export default function App() {
     const channel = pusherClient.subscribe("adored-sage-858");
 
     const handler = (data) => {
-      console.log("New message event:", data);
+      console.log("New message event:", data, activeContact);
 
       if (data.chat === activeContact._id) {
         setMessages((prev) => [...prev, data]);
@@ -48,7 +48,7 @@ export default function App() {
       channel.unbind("new-message", handler);
       pusherClient.unsubscribe("adored-sage-858");
     };
-  }, []);
+  }, [activeContact]);
 
   useEffect(() => {
     if (sender && sender === null) return;
@@ -56,8 +56,8 @@ export default function App() {
   }, [sender]);
 
   useEffect(() => {
-    console.log("Contacts API Response:", contactsApi.response);
     if (contactsApi.response) {
+      console.log(contactsApi.response[0]);
       setContacts(filterConstacts(contactsApi.response));
       setActiveContact(contactsApi.response[0]);
     }
@@ -129,7 +129,6 @@ export default function App() {
   };
 
   const getChatName = (chat) => {
-    console.log(chat.members);
     const member = chat.members.find(
       (member) => member.userId._id !== sender._id
     );

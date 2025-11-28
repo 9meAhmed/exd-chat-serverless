@@ -2,12 +2,10 @@ import { ListGroup, Form, Badge } from "react-bootstrap";
 import moment from "moment";
 
 export function ContactSidebar({ contacts, activeContact, onSelectContact }) {
-  console.log("Rendering ContactSidebar with contacts:", contacts);
   const authUser = localStorage.getItem("user");
   const currentUser = authUser ? JSON.parse(authUser) : null;
 
   const getChatName = (chat) => {
-    console.log(chat);
     const member = chat.members.find(
       (member) => member.userId._id !== currentUser._id
     );

@@ -10,15 +10,15 @@ export default async function handler(req, res) {
 
   await connectDB();
 
-  const user = await User.findOne({ name: sender.name }).lean();
+  const user = await User.findById(sender._id).lean();
 
-  const messages = await Message.find({ chat }).lean();
+  const messages = await Message.find({ chatId: chat._id }).lean();
 
   const messagesData = messages.map((msg) => {
-    const isSender = msg.user._id.equals(user._id);
+    const isSender = msg.senderId.equals(user._id);
     return {
       id: msg._id,
-      text: msg.message,
+      text: msg.text,
       sender: isSender ? "sender" : "other",
       timestamp: new Date(msg.createdAt - 300000),
     };
